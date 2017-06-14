@@ -369,3 +369,17 @@ func (rw *RWMutex) Lock() {
 func (rw *RWMutex) Unlock() {
 	rw.rw.unlock()
 }
+
+func LockOSCounts() (external, internal uint32) {
+	g := getg()
+	if g.m.lockedExt+g.m.lockedInt == 0 {
+		if g.lockedm != 0 {
+			panic("lockedm on non-locked goroutine")
+		}
+	} else {
+		if g.lockedm == 0 {
+			panic("nil lockedm on locked goroutine")
+		}
+	}
+	return g.m.lockedExt, g.m.lockedInt
+}
