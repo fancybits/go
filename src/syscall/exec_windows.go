@@ -126,7 +126,11 @@ func CloseOnExec(fd Handle) {
 }
 
 func SetNonblock(fd Handle, nonblocking bool) (err error) {
-	return nil
+	val := uint32(0)
+	if nonblocking {
+		val = 1
+	}
+	return ioctlsocket(fd, FIONBIO, &val)
 }
 
 // FullPath retrieves the full path of the specified file.

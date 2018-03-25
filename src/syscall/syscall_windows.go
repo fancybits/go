@@ -552,6 +552,7 @@ func LoadSetFileCompletionNotificationModes() error {
 // net api calls
 
 const socket_error = uintptr(^uint32(0))
+const FIONBIO = int32(-2147195266)
 
 //sys	WSAStartup(verreq uint32, data *WSAData) (sockerr error) = ws2_32.WSAStartup
 //sys	WSACleanup() (err error) [failretval==socket_error] = ws2_32.WSACleanup
@@ -563,6 +564,7 @@ const socket_error = uintptr(^uint32(0))
 //sys	connect(s Handle, name unsafe.Pointer, namelen int32) (err error) [failretval==socket_error] = ws2_32.connect
 //sys	getsockname(s Handle, rsa *RawSockaddrAny, addrlen *int32) (err error) [failretval==socket_error] = ws2_32.getsockname
 //sys	getpeername(s Handle, rsa *RawSockaddrAny, addrlen *int32) (err error) [failretval==socket_error] = ws2_32.getpeername
+//sys   ioctlsocket(s Handle, cmd int32, arg *uint32) (err error) [failretval==socket_error] = ws2_32.ioctlsocket
 //sys	listen(s Handle, backlog int32) (err error) [failretval==socket_error] = ws2_32.listen
 //sys	shutdown(s Handle, how int32) (err error) [failretval==socket_error] = ws2_32.shutdown
 //sys	Closesocket(s Handle) (err error) [failretval==socket_error] = ws2_32.closesocket

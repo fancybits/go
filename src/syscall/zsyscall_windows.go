@@ -153,6 +153,7 @@ var (
 	procconnect                            = modws2_32.NewProc("connect")
 	procgetsockname                        = modws2_32.NewProc("getsockname")
 	procgetpeername                        = modws2_32.NewProc("getpeername")
+	procioctlsocket                        = modws2_32.NewProc("ioctlsocket")
 	proclisten                             = modws2_32.NewProc("listen")
 	procshutdown                           = modws2_32.NewProc("shutdown")
 	procclosesocket                        = modws2_32.NewProc("closesocket")
@@ -1478,6 +1479,18 @@ func getsockname(s Handle, rsa *RawSockaddrAny, addrlen *int32) (err error) {
 
 func getpeername(s Handle, rsa *RawSockaddrAny, addrlen *int32) (err error) {
 	r1, _, e1 := Syscall(procgetpeername.Addr(), 3, uintptr(s), uintptr(unsafe.Pointer(rsa)), uintptr(unsafe.Pointer(addrlen)))
+	if r1 == socket_error {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = EINVAL
+		}
+	}
+	return
+}
+
+func ioctlsocket(s Handle, cmd int32, arg *uint32) (err error) {
+	r1, _, e1 := Syscall(procioctlsocket.Addr(), 3, uintptr(s), uintptr(cmd), uintptr(unsafe.Pointer(arg)))
 	if r1 == socket_error {
 		if e1 != 0 {
 			err = errnoErr(e1)
