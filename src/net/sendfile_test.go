@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"testing"
 )
 
@@ -92,11 +91,6 @@ func TestSendfile(t *testing.T) {
 }
 
 func TestSendfileParts(t *testing.T) {
-	switch runtime.GOOS {
-	case "dragonfly", "freebsd", "solaris":
-		t.Skipf("skipping on %s (see golang.org/issue/25809 for details)", runtime.GOOS)
-	}
-
 	ln, err := newLocalListener("tcp")
 	if err != nil {
 		t.Fatal(err)
