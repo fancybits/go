@@ -70,6 +70,19 @@ func testDWARF(t *testing.T, buildmode string, expectDWARF bool, env ...string) 
 				}
 				exe = filepath.Join(tmpDir, "go.o")
 			}
+
+			// Ensure Apple's tooling can parse our object for symbols.
+			out, err = exec.Command("symbols", exe).CombinedOutput()
+			if err != nil {
+				t.Fatal(err)
+			} else {
+				data := string(out)
+				if strings.HasPrefix(data, "Unable to find file") {
+					// This failure will cause the App Store to reject our binaries.
+					t.Fatalf("/usr/bin/symbols %v: failed to parse file", filepath.Base(exe))
+				}
+			}
+
 			f, err := objfile.Open(exe)
 			if err != nil {
 				t.Fatal(err)
@@ -152,6 +165,7 @@ func testDWARF(t *testing.T, buildmode string, expectDWARF bool, env ...string) 
 
 func TestDWARF(t *testing.T) {
 	testDWARF(t, "", true)
+	testDWARF(t, "c-archive", true)
 }
 
 func TestDWARFiOS(t *testing.T) {
