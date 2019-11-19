@@ -572,8 +572,8 @@ func mallocinit() {
 		// Because we're worried about fragmentation on
 		// 32-bit, we try to make a large initial reservation.
 		arenaSizes := []uintptr{
-			//512 << 20,
-			//256 << 20,
+			512 << 20,
+			256 << 20,
 			128 << 20,
 		}
 		for _, arenaSize := range arenaSizes {
