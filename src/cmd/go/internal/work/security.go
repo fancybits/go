@@ -103,7 +103,7 @@ var validCompilerFlags = []*lazyregexp.Regexp{
 	re(`-m(no-)?stack-(.+)`),
 	re(`-mmacosx-(.+)`),
 	re(`-mios-simulator-version-min=(.+)`),
-	re(`-miphoneos-version-min=(.+)`),
+	re(`-mi(phone)?os-version-min=(.+)`),
 	re(`-mtvos-simulator-version-min=(.+)`),
 	re(`-mtvos-version-min=(.+)`),
 	re(`-mwatchos-simulator-version-min=(.+)`),
@@ -124,6 +124,7 @@ var validCompilerFlags = []*lazyregexp.Regexp{
 	re(`-w`),
 	re(`-x([^@\-].*)`),
 	re(`-v`),
+	re(`-fembed-bitcode`),
 }
 
 var validCompilerFlagsWithNextArg = []string{
