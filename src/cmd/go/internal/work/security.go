@@ -124,7 +124,6 @@ var validCompilerFlags = []*lazyregexp.Regexp{
 	re(`-w`),
 	re(`-x([^@\-].*)`),
 	re(`-v`),
-	re(`-fembed-bitcode`),
 }
 
 var validCompilerFlagsWithNextArg = []string{
@@ -156,13 +155,14 @@ var validLinkerFlags = []*lazyregexp.Regexp{
 	re(`-mfloat-abi=([^@\-].*)`),
 	re(`-mmacosx-(.+)`),
 	re(`-mios-simulator-version-min=(.+)`),
-	re(`-miphoneos-version-min=(.+)`),
+	re(`-mi(phone)?os-version-min=(.+)`),
 	re(`-mthreads`),
 	re(`-mwindows`),
 	re(`-(pic|PIC|pie|PIE)`),
 	re(`-pthread`),
 	re(`-rdynamic`),
 	re(`-shared`),
+	re(`-fembed-bitcode`),
 	re(`-?-static([-a-z0-9+]*)`),
 	re(`-?-stdlib=([^@\-].*)`),
 	re(`-v`),
