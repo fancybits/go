@@ -638,7 +638,8 @@ func (t *transferReader) parseTransferEncoding() error {
 	if len(raw) != 1 {
 		return &unsupportedTEError{fmt.Sprintf("too many transfer encodings: %q", raw)}
 	}
-	if strings.ToLower(textproto.TrimString(raw[0])) != "chunked" {
+	te := strings.ToLower(textproto.TrimString(raw[0]))
+	if te != "chunked" && te != "identity" {
 		return &unsupportedTEError{fmt.Sprintf("unsupported transfer encoding: %q", raw[0])}
 	}
 
@@ -655,7 +656,7 @@ func (t *transferReader) parseTransferEncoding() error {
 	// Reportedly, these appear in the wild.
 	delete(t.Header, "Content-Length")
 
-	t.Chunked = true
+	t.Chunked = te == "chunked"
 	return nil
 }
 
