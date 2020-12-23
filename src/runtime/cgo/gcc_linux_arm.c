@@ -10,7 +10,7 @@
 
 static void *threadentry(void*);
 
-extern void (*x_cgo_inittls)(void **tlsg, void **tlsbase);
+void (*x_cgo_inittls)(void **tlsg, void **tlsbase);
 static void (*setg_gcc)(void*);
 
 void
