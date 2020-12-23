@@ -87,4 +87,4 @@ inittls(void **tlsg, void **tlsbase)
 	fatalf("inittls: could not find pthread key");
 }
 
-extern void (*x_cgo_inittls)(void **tlsg, void **tlsbase) = inittls;
+void (*x_cgo_inittls)(void **tlsg, void **tlsbase) = inittls;
