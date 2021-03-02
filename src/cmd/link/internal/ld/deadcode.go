@@ -24,6 +24,7 @@ type deadcodePass struct {
 	ifaceMethod     map[methodsig]bool // methods declared in reached interfaces
 	markableMethods []methodref        // methods of reached types
 	reflectSeen     bool               // whether we have seen a reflect method call
+	dynlink         bool
 
 	methodsigstmp []methodsig // scratch buffer for decoding method signatures
 }
@@ -34,6 +35,7 @@ func (d *deadcodePass) init() {
 	if objabi.Fieldtrack_enabled != 0 {
 		d.ldr.Reachparent = make([]loader.Sym, d.ldr.NSym())
 	}
+	d.dynlink = d.ctxt.DynlinkingGo()
 
 	if d.ctxt.BuildMode == BuildModeShared {
 		// Mark all symbols defined in this library as reachable when
@@ -111,6 +113,11 @@ func (d *deadcodePass) flood() {
 		var usedInIface bool
 
 		if isgotype {
+			if d.dynlink {
+				// When dynaamic linking, a type may be passed across DSO
+				// boundary and get converted to interface at the other side.
+				d.ldr.SetAttrUsedInIface(symIdx, true)
+			}
 			usedInIface = d.ldr.AttrUsedInIface(symIdx)
 		}
 
@@ -165,13 +172,17 @@ func (d *deadcodePass) flood() {
 				// R_USEIFACEMETHOD is a marker relocation that marks an interface
 				// method as used.
 				rs := r.Sym()
-				if d.ldr.SymType(rs) != sym.SDYNIMPORT { // don't decode DYNIMPORT symbol (we'll mark all exported methods anyway)
-					m := d.decodeIfaceMethod(d.ldr, d.ctxt.Arch, rs, r.Add())
-					if d.ctxt.Debugvlog > 1 {
-						d.ctxt.Logf("reached iface method: %v\n", m)
-					}
-					d.ifaceMethod[m] = true
+				if d.ctxt.linkShared && (d.ldr.SymType(rs) == sym.SDYNIMPORT || d.ldr.SymType(rs) == sym.Sxxx) {
+					// Don't decode symbol from shared library (we'll mark all exported methods anyway).
+					// We check for both SDYNIMPORT and Sxxx because name-mangled symbols haven't
+					// been resolved at this point.
+					continue
 				}
+				m := d.decodeIfaceMethod(d.ldr, d.ctxt.Arch, rs, r.Add())
+				if d.ctxt.Debugvlog > 1 {
+					d.ctxt.Logf("reached iface method: %v\n", m)
+				}
+				d.ifaceMethod[m] = true
 				continue
 			}
 			rs := r.Sym()
