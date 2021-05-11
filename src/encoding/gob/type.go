@@ -670,6 +670,53 @@ func (w *wireType) string() string {
 	return unknown
 }
 
+func (w *wireType) same(v *wireType) bool {
+	if w == v {
+		return true
+	}
+	switch {
+	case w.ArrayT != nil &&
+		v.ArrayT != nil:
+		return w.ArrayT.Name == v.ArrayT.Name &&
+			w.ArrayT.Elem == v.ArrayT.Elem &&
+			w.ArrayT.Len == v.ArrayT.Len
+	case w.SliceT != nil &&
+		v.SliceT != nil:
+		return w.SliceT.Name == v.SliceT.Name &&
+			w.SliceT.Elem == v.SliceT.Elem
+	case w.StructT != nil &&
+		v.StructT != nil:
+		if w.StructT.Name != v.StructT.Name {
+			return false
+		}
+		if len(w.StructT.Field) != len(v.StructT.Field) {
+			return false
+		}
+		for i := range w.StructT.Field {
+			if w.StructT.Field[i].Name != v.StructT.Field[i].Name ||
+				w.StructT.Field[i].Id != v.StructT.Field[i].Id {
+				return false
+			}
+		}
+		return true
+	case w.MapT != nil &&
+		v.MapT != nil:
+		return w.MapT.Name == v.MapT.Name &&
+			w.MapT.Key == v.MapT.Key &&
+			w.MapT.Elem == v.MapT.Elem
+	case w.GobEncoderT != nil &&
+		v.GobEncoderT != nil:
+		return w.GobEncoderT.Name == v.GobEncoderT.Name
+	case w.BinaryMarshalerT != nil &&
+		v.BinaryMarshalerT != nil:
+		return w.BinaryMarshalerT.Name == v.BinaryMarshalerT.Name
+	case w.TextMarshalerT != nil &&
+		v.TextMarshalerT != nil:
+		return w.TextMarshalerT.Name == v.TextMarshalerT.Name
+	}
+	return false
+}
+
 type typeInfo struct {
 	id      typeId
 	encInit sync.Mutex   // protects creation of encoder
