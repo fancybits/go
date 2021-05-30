@@ -392,7 +392,7 @@ func Open(name string, flag int, perm uint32) (fd Handle, err error) {
 		// Set all access rights granted by GENERIC_WRITE except for FILE_WRITE_DATA.
 		access |= FILE_APPEND_DATA | FILE_WRITE_ATTRIBUTES | _FILE_WRITE_EA | STANDARD_RIGHTS_WRITE | SYNCHRONIZE
 	}
-	sharemode := uint32(FILE_SHARE_READ | FILE_SHARE_WRITE)
+	sharemode := uint32(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
 	var sa *SecurityAttributes
 	if flag&O_CLOEXEC == 0 {
 		sa = makeInheritSa()
