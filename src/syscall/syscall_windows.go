@@ -363,7 +363,7 @@ func Open(path string, mode int, perm uint32) (fd Handle, err error) {
 		access &^= GENERIC_WRITE
 		access |= FILE_APPEND_DATA
 	}
-	sharemode := uint32(FILE_SHARE_READ | FILE_SHARE_WRITE)
+	sharemode := uint32(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
 	var sa *SecurityAttributes
 	if mode&O_CLOEXEC == 0 {
 		sa = makeInheritSa()
