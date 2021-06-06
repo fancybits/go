@@ -11,8 +11,6 @@
 #include "textflag.h"
 #include "cgo/abi_arm64.h"
 
-#define CLOCK_REALTIME		0
-
 TEXT notok<>(SB),NOSPLIT,$0
 	MOVD	$0, R8
 	MOVD	R8, (R8)
@@ -135,9 +133,9 @@ TEXT runtime·setitimer_trampoline(SB),NOSPLIT,$0
 	RET
 
 TEXT runtime·walltime_trampoline(SB),NOSPLIT,$0
-	MOVD	R0, R1			// arg 2 timespec
-	MOVW	$CLOCK_REALTIME, R0 	// arg 1 clock_id
-	BL	libc_clock_gettime(SB)
+	// R0 already has *timeval
+	MOVD	$0, R1 // no timezone needed
+	BL	libc_gettimeofday(SB)
 	RET
 
 GLOBL timebase<>(SB),NOPTR,$(machTimebaseInfo__size)
