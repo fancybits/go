@@ -11,8 +11,6 @@
 #include "textflag.h"
 #include "cgo/abi_amd64.h"
 
-#define CLOCK_REALTIME		0
-
 // Exit the entire program (like C exit)
 TEXT runtime·exit_trampoline(SB),NOSPLIT,$0
 	MOVL	0(DI), DI		// arg 1 exit status
@@ -113,9 +111,9 @@ initialized:
 	RET
 
 TEXT runtime·walltime_trampoline(SB),NOSPLIT,$0
-	MOVQ	DI, SI			// arg 2 timespec
-	MOVL	$CLOCK_REALTIME, DI	// arg 1 clock_id
-	CALL	libc_clock_gettime(SB)
+	// DI already has *timeval
+	XORL	SI, SI // no timezone needed
+	CALL	libc_gettimeofday(SB)
 	RET
 
 TEXT runtime·sigaction_trampoline(SB),NOSPLIT,$0
