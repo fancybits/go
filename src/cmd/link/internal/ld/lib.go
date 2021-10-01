@@ -1349,7 +1349,7 @@ func (ctxt *Link) hostlink() {
 			} else {
 				// Pass -z nodelete to mark the shared library as
 				// non-closeable: a dlclose will do nothing.
-				argv = append(argv, "-Wl,-z,nodelete")
+				// argv = append(argv, "-Wl,-z,nodelete")
 				// Only pass Bsymbolic on non-Windows.
 				argv = append(argv, "-Wl,-Bsymbolic")
 			}
