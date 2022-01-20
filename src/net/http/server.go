@@ -1824,7 +1824,7 @@ func (c *conn) serve(ctx context.Context) {
 				re.Conn.Close()
 				return
 			}
-			c.server.logf("http: TLS handshake error from %s: %v", c.rwc.RemoteAddr(), err)
+			//c.server.logf("http: TLS handshake error from %s: %v", c.rwc.RemoteAddr(), err)
 			return
 		}
 		c.tlsState = new(tls.ConnectionState)
