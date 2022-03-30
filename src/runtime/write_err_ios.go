@@ -1,13 +1,15 @@
-// Copyright 2009 The Go Authors. All rights reserved.
+// Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
-//go:build !android && !ios
 
 package runtime
 
 import "unsafe"
 
+var (
+	WriteErrFD uintptr = 2
+)
+
 func writeErr(b []byte) {
-	write(2, unsafe.Pointer(&b[0]), int32(len(b)))
+	write(WriteErrFD, unsafe.Pointer(&b[0]), int32(len(b)))
 }
