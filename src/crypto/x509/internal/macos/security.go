@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"internal/abi"
 	"strconv"
+	"strings"
+	syscallpkg "syscall"
 	"unsafe"
 )
 
@@ -77,6 +79,15 @@ var SecPolicyAppleSSL = StringToCFString("1.2.840.113635.100.1.3") // defined by
 var ErrNoTrustSettings = errors.New("no trust settings found")
 
 const errSecNoTrustSettings = -25263
+
+var missingSecTrustEvaluateWithError = false
+
+func init() {
+	v, _ := syscallpkg.Sysctl("kern.osrelease")
+	missingSecTrustEvaluateWithError = strings.HasPrefix(v, "14.") ||
+		strings.HasPrefix(v, "15.") ||
+		strings.HasPrefix(v, "16.")
+}
 
 //go:cgo_import_dynamic x509_SecTrustSettingsCopyCertificates SecTrustSettingsCopyCertificates "/System/Library/Frameworks/Security.framework/Versions/A/Security"
 
@@ -191,6 +202,30 @@ func x509_SecTrustGetResult_trampoline()
 //go:cgo_import_dynamic x509_SecTrustEvaluateWithError SecTrustEvaluateWithError "/System/Library/Frameworks/Security.framework/Versions/A/Security"
 
 func SecTrustEvaluateWithError(trustObj CFRef) error {
+	if missingSecTrustEvaluateWithError {
+		result, err := SecTrustEvaluate(trustObj)
+		if err != nil {
+			return err
+		}
+		switch result {
+		case SecTrustResultUnspecified, SecTrustResultProceed:
+			return nil
+		case SecTrustResultRecoverableTrustFailure:
+			return errors.New("x509: macOS certificate verification result: recoverable trust failure")
+		case SecTrustResultFatalTrustFailure:
+			return errors.New("x509: macOS certificate verification result: fatal trust failure")
+		case SecTrustResultOtherError:
+			return errors.New("x509: macOS certificate verification result: other error")
+		case SecTrustResultInvalid:
+			return errors.New("x509: macOS certificate verification result: invalid")
+		case SecTrustResultDeny:
+			return errors.New("x509: macOS certificate verification result: denied")
+		case SecTrustResultConfirm:
+			return errors.New("x509: macOS certificate verification result: confirmation required")
+		default:
+			return errors.New("x509: macOS certificate verification result unknown")
+		}
+	}
 	var errRef CFRef
 	ret := syscall(abi.FuncPCABI0(x509_SecTrustEvaluateWithError_trampoline), uintptr(trustObj), uintptr(unsafe.Pointer(&errRef)), 0, 0, 0, 0)
 	if int32(ret) != 1 {
