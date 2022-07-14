@@ -640,7 +640,7 @@ func (t *transferReader) parseTransferEncoding() error {
 	if len(raw) != 1 {
 		return &unsupportedTEError{fmt.Sprintf("too many transfer encodings: %q", raw)}
 	}
-	te := textproto.TrimString(raw[0])
+	te := raw[0]
 	if !ascii.EqualFold(te, "chunked") && !ascii.EqualFold(te, "identity") {
 		return &unsupportedTEError{fmt.Sprintf("unsupported transfer encoding: %q", raw[0])}
 	}
