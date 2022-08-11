@@ -15,7 +15,7 @@
 
 #include <TargetConditionals.h>
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
 #include <CoreFoundation/CFBundle.h>
 #include <CoreFoundation/CFString.h>
 #endif
@@ -60,7 +60,7 @@ threadentry(void *v)
 	ts = *(ThreadStart*)v;
 	free(v);
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
 	darwin_arm_init_thread_exception_port();
 #endif
 
@@ -68,7 +68,7 @@ threadentry(void *v)
 	return nil;
 }
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
 
 // init_working_dir sets the current working directory to the app root.
 // By default ios/arm64 processes start in "/".
@@ -122,7 +122,7 @@ init_working_dir()
 	}
 }
 
-#endif // TARGET_OS_IPHONE
+#endif // TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
 
 void
 x_cgo_init(G *g, void (*setg)(void*))
@@ -134,7 +134,7 @@ x_cgo_init(G *g, void (*setg)(void*))
 	size = pthread_get_stacksize_np(pthread_self());
 	g->stacklo = (uintptr)&size - size + 4096;
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
 	darwin_arm_init_mach_exception_handler();
 	darwin_arm_init_thread_exception_port();
 	init_working_dir();
