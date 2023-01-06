@@ -219,7 +219,7 @@ func SecTrustEvaluateWithError(trustObj CFRef) (int, error) {
 	if missingSecTrustEvaluateWithError {
 		result, err := SecTrustEvaluate(trustObj)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		switch result {
 		case SecTrustResultUnspecified, SecTrustResultProceed:
