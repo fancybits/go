@@ -8,7 +8,6 @@ package macOS
 
 import (
 	"errors"
-	"fmt"
 	"internal/abi"
 	"strconv"
 	"strings"
@@ -52,6 +51,15 @@ const (
 	SecTrustSettingsDomainUser SecTrustSettingsDomain = iota
 	SecTrustSettingsDomainAdmin
 	SecTrustSettingsDomainSystem
+)
+
+const (
+	// various macOS error codes that can be returned from
+	// SecTrustEvaluateWithError that we can map to Go cert
+	// verification error types.
+	ErrSecCertificateExpired = -67818
+	ErrSecHostNameMismatch   = -67602
+	ErrSecNotTrusted         = -67843
 )
 
 type OSStatus struct {
@@ -207,7 +215,7 @@ func x509_SecTrustGetResult_trampoline()
 
 //go:cgo_import_dynamic x509_SecTrustEvaluateWithError SecTrustEvaluateWithError "/System/Library/Frameworks/Security.framework/Versions/A/Security"
 
-func SecTrustEvaluateWithError(trustObj CFRef) error {
+func SecTrustEvaluateWithError(trustObj CFRef) (int, error) {
 	if missingSecTrustEvaluateWithError {
 		result, err := SecTrustEvaluate(trustObj)
 		if err != nil {
@@ -215,33 +223,34 @@ func SecTrustEvaluateWithError(trustObj CFRef) error {
 		}
 		switch result {
 		case SecTrustResultUnspecified, SecTrustResultProceed:
-			return nil
+			return 0, nil
 		case SecTrustResultRecoverableTrustFailure:
-			return errors.New("x509: macOS certificate verification result: recoverable trust failure")
+			return 0, errors.New("macOS certificate verification result: recoverable trust failure")
 		case SecTrustResultFatalTrustFailure:
-			return errors.New("x509: macOS certificate verification result: fatal trust failure")
+			return 0, errors.New("macOS certificate verification result: fatal trust failure")
 		case SecTrustResultOtherError:
-			return errors.New("x509: macOS certificate verification result: other error")
+			return 0, errors.New("macOS certificate verification result: other error")
 		case SecTrustResultInvalid:
-			return errors.New("x509: macOS certificate verification result: invalid")
+			return 0, errors.New("macOS certificate verification result: invalid")
 		case SecTrustResultDeny:
-			return errors.New("x509: macOS certificate verification result: denied")
+			return 0, errors.New("macOS certificate verification result: denied")
 		case SecTrustResultConfirm:
-			return errors.New("x509: macOS certificate verification result: confirmation required")
+			return 0, errors.New("macOS certificate verification result: confirmation required")
 		default:
-			return errors.New("x509: macOS certificate verification result unknown")
+			return 0, errors.New("macOS certificate verification result unknown")
 		}
 	}
 	var errRef CFRef
 	ret := syscall(abi.FuncPCABI0(x509_SecTrustEvaluateWithError_trampoline), uintptr(trustObj), uintptr(unsafe.Pointer(&errRef)), 0, 0, 0, 0)
 	if int32(ret) != 1 {
 		errStr := CFErrorCopyDescription(errRef)
-		err := fmt.Errorf("x509: %s", CFStringToString(errStr))
+		err := errors.New(CFStringToString(errStr))
+		errCode := CFErrorGetCode(errRef)
 		CFRelease(errRef)
 		CFRelease(errStr)
-		return err
+		return errCode, err
 	}
-	return nil
+	return 0, nil
 }
 func x509_SecTrustEvaluateWithError_trampoline()
 
