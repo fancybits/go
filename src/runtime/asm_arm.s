@@ -28,7 +28,7 @@ TEXT main(SB),NOSPLIT|NOFRAME,$0
 // c-archive) or when the shared library is loaded (for c-shared).
 // We expect argc and argv to be passed in the usual C ABI registers
 // R0 and R1.
-TEXT _rt0_arm_lib(SB),NOSPLIT,$104
+TEXT _rt0_arm_lib(SB),NOSPLIT,$108
 	// Preserve callee-save registers. Raspberry Pi's dlopen(), for example,
 	// actually cares that R11 is preserved.
 	MOVW	R4, 12(R13)
