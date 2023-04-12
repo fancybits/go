@@ -1844,7 +1844,13 @@ func isCommonNetReadError(err error) bool {
 
 // Serve a new connection.
 func (c *conn) serve(ctx context.Context) {
-	c.remoteAddr = c.rwc.RemoteAddr().String()
+	ra := c.rwc.RemoteAddr()
+	if ra == nil {
+		c.close()
+		c.setState(c.rwc, StateClosed, runHooks)
+		return
+	}
+	c.remoteAddr = ra.String()
 	ctx = context.WithValue(ctx, LocalAddrContextKey, c.rwc.LocalAddr())
 	var inFlightResponse *response
 	defer func() {
