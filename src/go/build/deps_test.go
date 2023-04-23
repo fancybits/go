@@ -552,6 +552,9 @@ var depsRules = `
 	< testing/iotest
 	< testing/fstest;
 
+	log/slog
+	< testing/slogtest;
+
 	FMT, flag, math/rand
 	< testing/quick;
 
