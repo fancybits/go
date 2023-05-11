@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"html"
+	"internal/godebug"
 	"io"
 	"text/template"
 	"text/template/parse"
@@ -223,6 +224,16 @@ func (e *escaper) escapeAction(c context, n *parse.ActionNode) context {
 		c.jsCtx = jsCtxDivOp
 	case stateJSDqStr, stateJSSqStr:
 		s = append(s, "_html_template_jsstrescaper")
+	case stateJSBqStr:
+		debugAllowActionJSTmpl := godebug.Get("jstmpllitinterp")
+		if debugAllowActionJSTmpl == "1" {
+			s = append(s, "_html_template_jsstrescaper")
+		} else {
+			return context{
+				state: stateError,
+				err:   errorf(errJSTmplLit, n, n.Line, "%s appears in a JS template literal", n),
+			}
+		}
 	case stateJSRegexp:
 		s = append(s, "_html_template_jsregexpescaper")
 	case stateCSS:
@@ -369,9 +380,8 @@ func normalizeEscFn(e string) string {
 // for all x.
 var redundantFuncs = map[string]map[string]bool{
 	"_html_template_commentescaper": {
-		"_html_template_attrescaper":    true,
-		"_html_template_nospaceescaper": true,
-		"_html_template_htmlescaper":    true,
+		"_html_template_attrescaper": true,
+		"_html_template_htmlescaper": true,
 	},
 	"_html_template_cssescaper": {
 		"_html_template_attrescaper": true,
