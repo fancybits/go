@@ -415,6 +415,19 @@ TEXT runtime·kevent(SB),NOSPLIT,$0
 	MOVL	AX, ret+24(FP)
 	RET
 
+// func fcntl(fd, cmd, arg int32) (int32, int32)
+TEXT runtime·fcntl(SB),NOSPLIT,$-4
+	MOVL	$92, AX
+	INT	$0x80
+	JAE	noerr
+	MOVL	$-1, ret+12(FP)
+	MOVL	AX, errno+16(FP)
+	RET
+noerr:
+	MOVL	AX, ret+12(FP)
+	MOVL	$0, errno+16(FP)
+	RET
+
 // int32 runtime·closeonexec(int32 fd);
 TEXT runtime·closeonexec(SB),NOSPLIT,$32
 	MOVL	$92, AX		// fcntl
