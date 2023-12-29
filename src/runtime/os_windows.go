@@ -39,8 +39,8 @@ const (
 //go:cgo_import_dynamic runtime._GetSystemInfo GetSystemInfo%1 "kernel32.dll"
 //go:cgo_import_dynamic runtime._GetThreadContext GetThreadContext%2 "kernel32.dll"
 //go:cgo_import_dynamic runtime._SetThreadContext SetThreadContext%2 "kernel32.dll"
-//go:cgo_import_dynamic runtime._LoadLibraryExW LoadLibraryExW%3 "kernel32.dll"
 //go:cgo_import_dynamic runtime._LoadLibraryW LoadLibraryW%1 "kernel32.dll"
+//go:cgo_import_dynamic runtime._LoadLibraryA LoadLibraryA%1 "kernel32.dll"
 //go:cgo_import_dynamic runtime._PostQueuedCompletionStatus PostQueuedCompletionStatus%4 "kernel32.dll"
 //go:cgo_import_dynamic runtime._RaiseFailFastException RaiseFailFastException%3 "kernel32.dll"
 //go:cgo_import_dynamic runtime._ResumeThread ResumeThread%1 "kernel32.dll"
@@ -94,8 +94,8 @@ var (
 	_GetSystemTimeAsFileTime,
 	_GetThreadContext,
 	_SetThreadContext,
-	_LoadLibraryExW,
 	_LoadLibraryW,
+	_LoadLibraryA,
 	_PostQueuedCompletionStatus,
 	_QueryPerformanceCounter,
 	_QueryPerformanceFrequency,
@@ -124,7 +124,10 @@ var (
 
 	// Following syscalls are only available on some Windows PCs.
 	// We will load syscalls, if available, before using them.
+	_AddDllDirectory,
 	_AddVectoredContinueHandler,
+	_LoadLibraryExA,
+	_LoadLibraryExW,
 	_ stdFunction
 
 	// Use ProcessPrng to generate cryptographically random data.
@@ -145,12 +148,12 @@ var (
 )
 
 var (
-	bcryptprimitivesdll = [...]uint16{'b', 'c', 'r', 'y', 'p', 't', 'p', 'r', 'i', 'm', 'i', 't', 'i', 'v', 'e', 's', '.', 'd', 'l', 'l', 0}
-	kernel32dll         = [...]uint16{'k', 'e', 'r', 'n', 'e', 'l', '3', '2', '.', 'd', 'l', 'l', 0}
-	ntdlldll            = [...]uint16{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l', 0}
-	powrprofdll         = [...]uint16{'p', 'o', 'w', 'r', 'p', 'r', 'o', 'f', '.', 'd', 'l', 'l', 0}
-	winmmdll            = [...]uint16{'w', 'i', 'n', 'm', 'm', '.', 'd', 'l', 'l', 0}
-	ws2_32dll           = [...]uint16{'w', 's', '2', '_', '3', '2', '.', 'd', 'l', 'l', 0}
+	bcryptprimitivesdll = [...]byte{'b', 'c', 'r', 'y', 'p', 't', 'p', 'r', 'i', 'm', 'i', 't', 'i', 'v', 'e', 's', '.', 'd', 'l', 'l', 0}
+	kernel32dll         = [...]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2', '.', 'd', 'l', 'l', 0}
+	ntdlldll            = [...]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l', 0}
+	powrprofdll         = [...]byte{'p', 'o', 'w', 'r', 'p', 'r', 'o', 'f', '.', 'd', 'l', 'l', 0}
+	winmmdll            = [...]byte{'w', 'i', 'n', 'm', 'm', '.', 'd', 'l', 'l', 0}
+	ws2_32dll           = [...]byte{'w', 's', '2', '_', '3', '2', '.', 'd', 'l', 'l', 0}
 )
 
 // Function to be called by windows CreateThread
@@ -235,19 +238,27 @@ func initSysDirectory() {
 	sysDirectory[l] = '\\'
 	sysDirectoryLen = l + 1
 }
-
-func windowsLoadSystemLib(name []uint16) uintptr {
-	return stdcall3(_LoadLibraryExW, uintptr(unsafe.Pointer(&name[0])), 0, _LOAD_LIBRARY_SEARCH_SYSTEM32)
+func windowsLoadSystemLib(name []byte) uintptr {
+	if useLoadLibraryEx {
+		return stdcall3(_LoadLibraryExA, uintptr(unsafe.Pointer(&name[0])), 0, _LOAD_LIBRARY_SEARCH_SYSTEM32)
+	} else {
+		absName := append(sysDirectory[:sysDirectoryLen], name...)
+		return stdcall1(_LoadLibraryA, uintptr(unsafe.Pointer(&absName[0])))
+	}
 }
 
 const haveCputicksAsm = GOARCH == "386" || GOARCH == "amd64"
 
 func loadOptionalSyscalls() {
-	k32 := windowsLoadSystemLib(kernel32dll[:])
+	k32 := stdcall1(_LoadLibraryA, uintptr(unsafe.Pointer(&kernel32dll[0])))
 	if k32 == 0 {
 		throw("kernel32.dll not found")
 	}
+	_AddDllDirectory = windowsFindfunc(k32, []byte("AddDllDirectory\000"))
 	_AddVectoredContinueHandler = windowsFindfunc(k32, []byte("AddVectoredContinueHandler\000"))
+	_LoadLibraryExA = windowsFindfunc(k32, []byte("LoadLibraryExA\000"))
+	_LoadLibraryExW = windowsFindfunc(k32, []byte("LoadLibraryExW\000"))
+	useLoadLibraryEx = (_LoadLibraryExW != nil && _LoadLibraryExA != nil && _AddDllDirectory != nil)
 
 	bcryptPrimitives := windowsLoadSystemLib(bcryptprimitivesdll[:])
 	if bcryptPrimitives == 0 {
@@ -377,6 +388,22 @@ const (
 
 // in sys_windows_386.s and sys_windows_amd64.s:
 func getlasterror() uint32
+
+// When loading DLLs, we prefer to use LoadLibraryEx with
+// LOAD_LIBRARY_SEARCH_* flags, if available. LoadLibraryEx is not
+// available on old Windows, though, and the LOAD_LIBRARY_SEARCH_*
+// flags are not available on some versions of Windows without a
+// security patch.
+//
+// https://msdn.microsoft.com/en-us/library/ms684179(v=vs.85).aspx says:
+// "Windows 7, Windows Server 2008 R2, Windows Vista, and Windows
+// Server 2008: The LOAD_LIBRARY_SEARCH_* flags are available on
+// systems that have KB2533623 installed. To determine whether the
+// flags are available, use GetProcAddress to get the address of the
+// AddDllDirectory, RemoveDllDirectory, or SetDefaultDllDirectories
+// function. If GetProcAddress succeeds, the LOAD_LIBRARY_SEARCH_*
+// flags can be used with LoadLibraryEx."
+var useLoadLibraryEx bool
 
 var timeBeginPeriodRetValue uint32
 
