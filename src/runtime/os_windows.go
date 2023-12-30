@@ -540,6 +540,7 @@ func initLongPathSupport() {
 func osinit() {
 	asmstdcallAddr = unsafe.Pointer(abi.FuncPCABI0(asmstdcall))
 
+	initSysDirectory()
 	loadOptionalSyscalls()
 
 	preventErrorDialogs()
@@ -549,7 +550,6 @@ func osinit() {
 	initHighResTimer()
 	timeBeginPeriodRetValue = osRelax(false)
 
-	initSysDirectory()
 	initLongPathSupport()
 
 	ncpu = getproccount()
