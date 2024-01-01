@@ -266,6 +266,9 @@ func loadOptionalSyscalls() {
 		throw("bcryptprimitives.dll not found")
 	}
 	_ProcessPrng = windowsFindfunc(bcryptPrimitives, []byte("ProcessPrng\000"))
+	if _ProcessPrng == nil {
+		throw("ProcessPrng not found")
+	}
 
 	n32 := windowsLoadSystemLib(ntdlldll[:])
 	if n32 == 0 {
