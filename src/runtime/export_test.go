@@ -436,6 +436,8 @@ func ReadMetricsSlow(memStats *MemStats, samplesp unsafe.Pointer, len, cap int) 
 	startTheWorld()
 }
 
+var DoubleCheckReadMemStats = &doubleCheckReadMemStats
+
 // ReadMemStatsSlow returns both the runtime-computed MemStats and
 // MemStats accumulated by scanning the heap.
 func ReadMemStatsSlow() (base, slow MemStats) {
@@ -552,6 +554,10 @@ func blockOnSystemStackInternal() {
 
 type RWMutex struct {
 	rw rwmutex
+}
+
+func (rw *RWMutex) Init() {
+	rw.rw.init(lockRankTestR, lockRankTestRInternal, lockRankTestW)
 }
 
 func (rw *RWMutex) RLock() {
