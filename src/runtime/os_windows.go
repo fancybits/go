@@ -16,7 +16,6 @@ const (
 	_NSIG = 65
 )
 
-//go:cgo_import_dynamic runtime._AddVectoredContinueHandler AddVectoredContinueHandler%2 "kernel32.dll"
 //go:cgo_import_dynamic runtime._AddVectoredExceptionHandler AddVectoredExceptionHandler%2 "kernel32.dll"
 //go:cgo_import_dynamic runtime._CloseHandle CloseHandle%1 "kernel32.dll"
 //go:cgo_import_dynamic runtime._CreateEventA CreateEventA%4 "kernel32.dll"
@@ -36,6 +35,7 @@ const (
 //go:cgo_import_dynamic runtime._GetQueuedCompletionStatusEx GetQueuedCompletionStatusEx%6 "kernel32.dll"
 //go:cgo_import_dynamic runtime._GetStdHandle GetStdHandle%1 "kernel32.dll"
 //go:cgo_import_dynamic runtime._GetSystemDirectoryA GetSystemDirectoryA%2 "kernel32.dll"
+//go:cgo_import_dynamic runtime._GetSystemDirectoryW GetSystemDirectoryW%2 "kernel32.dll"
 //go:cgo_import_dynamic runtime._GetSystemInfo GetSystemInfo%1 "kernel32.dll"
 //go:cgo_import_dynamic runtime._GetThreadContext GetThreadContext%2 "kernel32.dll"
 //go:cgo_import_dynamic runtime._SetThreadContext SetThreadContext%2 "kernel32.dll"
@@ -74,7 +74,6 @@ var (
 	// Following syscalls are available on every Windows PC.
 	// All these variables are set by the Windows executable
 	// loader before the Go program starts.
-	_AddVectoredContinueHandler,
 	_AddVectoredExceptionHandler,
 	_CloseHandle,
 	_CreateEventA,
@@ -94,6 +93,7 @@ var (
 	_GetQueuedCompletionStatusEx,
 	_GetStdHandle,
 	_GetSystemDirectoryA,
+	_GetSystemDirectoryW,
 	_GetSystemInfo,
 	_GetThreadContext,
 	_SetThreadContext,
@@ -161,12 +161,12 @@ var (
 )
 
 var (
-	advapi32dll         = [...]uint16{'a', 'd', 'v', 'a', 'p', 'i', '3', '2', '.', 'd', 'l', 'l', 0}
+	advapi32dll = [...]byte{'a', 'd', 'v', 'a', 'p', 'i', '3', '2', '.', 'd', 'l', 'l', 0}
 	//bcryptprimitivesdll = [...]uint16{'b', 'c', 'r', 'y', 'p', 't', 'p', 'r', 'i', 'm', 'i', 't', 'i', 'v', 'e', 's', '.', 'd', 'l', 'l', 0}
-	ntdlldll            = [...]uint16{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l', 0}
-	powrprofdll         = [...]uint16{'p', 'o', 'w', 'r', 'p', 'r', 'o', 'f', '.', 'd', 'l', 'l', 0}
-	winmmdll            = [...]uint16{'w', 'i', 'n', 'm', 'm', '.', 'd', 'l', 'l', 0}
-	kernel32dll         = [...]uint16{'k', 'e', 'r', 'n', 'e', 'l', '3', '2', '.', 'd', 'l', 'l', 0}
+	ntdlldll    = [...]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l', 0}
+	powrprofdll = [...]byte{'p', 'o', 'w', 'r', 'p', 'r', 'o', 'f', '.', 'd', 'l', 'l', 0}
+	winmmdll    = [...]byte{'w', 'i', 'n', 'm', 'm', '.', 'd', 'l', 'l', 0}
+	kernel32dll = [...]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2', '.', 'd', 'l', 'l', 0}
 )
 
 // Function to be called by windows CreateThread
@@ -261,12 +261,12 @@ func windows_GetSystemDirectory() string {
 	return unsafe.String(&sysDirectory[0], sysDirectoryLen)
 }
 
-func windowsLoadSystemLib(name []uint16) uintptr {
+func windowsLoadSystemLib(name []byte) uintptr {
 	if useLoadLibraryEx {
-		return stdcall3(_LoadLibraryExW, uintptr(unsafe.Pointer(&name[0])), 0, _LOAD_LIBRARY_SEARCH_SYSTEM32)
+		return stdcall3(_LoadLibraryExA, uintptr(unsafe.Pointer(&name[0])), 0, _LOAD_LIBRARY_SEARCH_SYSTEM32)
 	} else {
 		absName := append(sysDirectory[:sysDirectoryLen], name...)
-		return stdcall1(_LoadLibraryW, uintptr(unsafe.Pointer(&absName[0])))
+		return stdcall1(_LoadLibraryA, uintptr(unsafe.Pointer(&absName[0])))
 	}
 }
 
@@ -285,7 +285,7 @@ func windows_QueryPerformanceFrequency() int64 {
 }
 
 func loadOptionalSyscalls() {
-	k32 := stdcall1(_LoadLibraryW, uintptr(unsafe.Pointer(&kernel32dll[0])))
+	k32 := stdcall1(_LoadLibraryA, uintptr(unsafe.Pointer(&kernel32dll[0])))
 	if k32 == 0 {
 		throw("kernel32.dll not found")
 	}

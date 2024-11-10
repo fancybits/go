@@ -423,10 +423,10 @@ const _LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800
 //go:cgo_unsafe_args
 func syscall_loadsystemlibrary(filename *uint16, absoluteFilepath *uint16) (handle, err uintptr) {
 	lockOSThread()
-	c := &getg().m.syscall
+	c := &getg().m.winsyscall
 
 	if useLoadLibraryEx {
-		c.fn = getLoadLibraryEx()
+		c.fn = uintptr(_LoadLibraryExW)
 		c.n = 3
 		args := struct {
 			lpFileName *uint16
@@ -435,7 +435,7 @@ func syscall_loadsystemlibrary(filename *uint16, absoluteFilepath *uint16) (hand
 		}{filename, 0, _LOAD_LIBRARY_SEARCH_SYSTEM32}
 		c.args = uintptr(noescape(unsafe.Pointer(&args)))
 	} else {
-		c.fn = getLoadLibrary()
+		c.fn = uintptr(_LoadLibraryW)
 		c.n = 1
 		c.args = uintptr(noescape(unsafe.Pointer(&absoluteFilepath)))
 	}
