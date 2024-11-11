@@ -447,6 +447,7 @@ func syscall_loadsystemlibrary(filename *uint16, absoluteFilepath *uint16) (hand
 	if handle == 0 {
 		err = c.err
 	}
+	unlockOSThread() // not defer'd after the lockOSThread above to save stack frame size.
 	return
 }
 
