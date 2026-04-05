@@ -6,6 +6,8 @@
 
 package runtime
 
+var WriteErrFD uintptr = 2
+
 //go:nosplit
 func writeErr(b []byte) {
 	if len(b) > 0 {
