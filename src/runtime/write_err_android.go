@@ -9,6 +9,8 @@ import (
 	"unsafe"
 )
 
+var WriteErrFD uintptr = 2
+
 var (
 	writeHeader = []byte{6 /* ANDROID_LOG_ERROR */, 'G', 'o', 0}
 	writePath   = []byte("/dev/log/main\x00")

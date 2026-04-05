@@ -230,7 +230,7 @@ func writeErrStr(s string) {
 //
 //go:nosplit
 func writeErrData(data *byte, n int32) {
-	write(2, unsafe.Pointer(data), n)
+	write(WriteErrFD, unsafe.Pointer(data), n)
 
 	// If crashing, print a copy to the SetCrashOutput fd.
 	gp := getg()

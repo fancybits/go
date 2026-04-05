@@ -4,12 +4,11 @@
 
 package runtime
 
-import "unsafe"
+var WriteErrFD uintptr = 2
 
-var (
-	WriteErrFD uintptr = 2
-)
-
+//go:nosplit
 func writeErr(b []byte) {
-	write(WriteErrFD, unsafe.Pointer(&b[0]), int32(len(b)))
+	if len(b) > 0 {
+		writeErrData(&b[0], int32(len(b)))
+	}
 }
